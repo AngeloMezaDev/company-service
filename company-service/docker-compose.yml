@@ -1,0 +1,69 @@
+version: '3.8'
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./init.sql:/init.sql
+      - sqlserver_data:/var/opt/mssql
+    # Modificamos el comando de inicio para garantizar la creación de la base de datos
+    command: >
+      bash -c '
+        # Iniciamos SQL Server en segundo plano
+        /opt/mssql/bin/sqlservr &
+        
+        # Esperamos a que SQL Server esté completamente iniciado
+        echo "Esperando a que SQL Server inicie..."
+        sleep 30
+        
+        # Intentamos crear la base de datos varias veces
+        for i in {1..50}; do
+          echo "Intento $$i de crear la base de datos..."
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -C -i /init.sql && break
+          sleep 1
+        done
+        
+        # Mantenemos el contenedor ejecutándose
+        tail -f /dev/null
+      '
+    healthcheck:
+      # Verificamos específicamente la existencia de la base de datos
+      test: >
+        bash -c '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -C -Q "IF DB_ID('\''CompanyManagement'\'') IS NOT NULL SELECT 1 ELSE EXIT 1"'
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 40s
+    networks:
+      - company-network
+
+  app:
+    build: .
+    container_name: company-service-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sqlserver:1433;databaseName=CompanyManagement;trustServerCertificate=true;encrypt=true
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=YourStrong@Passw0rd
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_FLYWAY_ENABLED=true
+      - SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - company-network
+
+networks:
+  company-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
