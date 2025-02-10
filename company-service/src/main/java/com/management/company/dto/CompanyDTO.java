@@ -32,4 +32,8 @@ public class CompanyDTO {
     @Email(message = "Formato de email inválido")
     @Size(max = 100, message = "El email debe tener menos de 100 caracteres")
     private String email;
+
+    private Boolean is_active;
+
+    private Boolean is_deleted;
 }

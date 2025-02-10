@@ -40,9 +40,12 @@ public class Company {
 
     private LocalDateTime updatedDate;
 
-    @Column(nullable = false)
-    private Boolean isActive = true;
+    @Column(name = "is_active")
+    private Boolean isActive;
 
+    @Column(name = "is_deleted")
+    private Boolean IsDeleted;
+    
     @PrePersist
     protected void onCreate() {
         createdDate = LocalDateTime.now();

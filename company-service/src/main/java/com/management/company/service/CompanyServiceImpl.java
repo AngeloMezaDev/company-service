@@ -65,18 +65,23 @@ public class CompanyServiceImpl implements CompanyService { // Corregido el nomb
 
     @Override
     @Transactional
-    public CompanyDTO updateCompany(Long id, @Valid CompanyDTO companyDTO) {
-        // Búsqueda de compañía existente
-        log.info("Iniciando actualización de compañía con ID: {}", id);
-        Company existingCompany = findCompanyById(id);
+    public CompanyDTO updateCompany(Long id, CompanyDTO companyDTO) {
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
         
-        // Actualización selectiva de campos
-        updateCompanyFields(existingCompany, companyDTO);
-
-        // Guardado y conversión a DTO
-        existingCompany = companyRepository.save(existingCompany);
-        log.info("Compañía actualizada exitosamente: {}", id);
-        return companyMapper.toDTO(existingCompany);
+        // Añade un log aquí
+        log.info("Received is_active value: {}", companyDTO.getIs_active());
+        
+        company.setIsActive(companyDTO.getIs_active());
+        company.setIsDeleted(Boolean.TRUE.equals(companyDTO.getIs_deleted()));        
+        log.info("Set isActive value: {}", company.getIsActive());
+        
+        Company savedCompany = companyRepository.save(company);
+        
+        // Y un log final aquí
+        log.info("Saved isActive value: {}", savedCompany.getIsActive());
+        
+        return companyMapper.toDTO(savedCompany);
     }
 
     @Override
@@ -86,6 +91,7 @@ public class CompanyServiceImpl implements CompanyService { // Corregido el nomb
         log.info("Iniciando eliminación lógica de compañía con ID: {}", id);
         Company company = findCompanyById(id);
         company.setIsActive(false);
+        company.setIsDeleted(true);
         companyRepository.save(company);
         log.info("Compañía desactivada: {}", id);
     }

@@ -11,10 +11,13 @@ public interface CompanyMapper {
     
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "updatedDate", ignore = true)
-    @Mapping(target = "isActive", ignore = true)
     @Mapping(source = "companyId", target = "companyId")
+    @Mapping(source = "is_active", target = "isActive")
+    @Mapping(source = "is_deleted", target = "isDeleted")
     Company toEntity(CompanyDTO dto);
 
     @Mapping(source = "companyId", target = "companyId")
+    @Mapping(source = "isActive", target = "is_active")
+    @Mapping(source = "isDeleted", target = "is_deleted")
     CompanyDTO toDTO(Company entity);
 }
